@@ -96,358 +96,358 @@ class MFD
   BANNER
 
   def initialize(argv)
-    @predicates = ['(true)']
-    @scope  = nil
-    @print_command = false
-    @ascii_null = false
-    @live = false
-    @count = false
-    parser.parse! argv
+	@predicates = ['(true)']
+	@scope  = nil
+	@print_command = false
+	@ascii_null = false
+	@live = false
+	@count = false
+	parser.parse! argv
   end
 
   def parser
-    @parser ||= create_parser
+	@parser ||= create_parser
   end
 
   def create_parser
-    @parser = OptionParser.new
+	@parser = OptionParser.new
 
-    @parser.banner = BANNER
-    self.on_from_option
-    self.on_to_option
-    self.on_query_option
-    self.on_kind_option
-    self.on_smaller_than
-    self.on_name_option
-    self.on_null_option
-    self.on_live_option
-    self.on_count_option
-    self.on_onlyin_option
-    self.on_debug_option
-    self.on_from_create_option
-    self.on_to_create_option
-    self.on_content_type_option
-    self.on_list_types_option
-    self.on_bigger_than_option
-    self.on_prop_eq_option
-    self.on_prop_ne_option
-    self.on_prop_le_option
-    self.on_prop_ge_option
-    self.on_download_url_option
-    self.on_file_extension_name_option
+	@parser.banner = BANNER
+	self.on_from_option
+	self.on_to_option
+	self.on_query_option
+	self.on_kind_option
+	self.on_smaller_than
+	self.on_name_option
+	self.on_null_option
+	self.on_live_option
+	self.on_count_option
+	self.on_onlyin_option
+	self.on_debug_option
+	self.on_from_create_option
+	self.on_to_create_option
+	self.on_content_type_option
+	self.on_list_types_option
+	self.on_bigger_than_option
+	self.on_prop_eq_option
+	self.on_prop_ne_option
+	self.on_prop_le_option
+	self.on_prop_ge_option
+	self.on_download_url_option
+	self.on_file_extension_name_option
   end
 
   def to_cmd
-    "mdfind #{@scope ? "-onlyin '#{@scope}'" : "" } \
-    #{@ascii_null ? "-0" : ""} \
-    #{@live ? "-live" : ""} \
-    #{@count ? "-count" : ""} \
-    '#{predication}'"
+	"mdfind #{@scope ? "-onlyin '#{@scope}'" : "" } \
+	#{@ascii_null ? "-0" : ""} \
+	#{@live ? "-live" : ""} \
+	#{@count ? "-count" : ""} \
+	'#{predication}'"
   end
 
   def predication
-    @predicates.join ' && '
+	@predicates.join ' && '
   end
 
   def execute
-    puts to_cmd if @print_command
-    system to_cmd
+	puts to_cmd if @print_command
+	system to_cmd
   end
 
   def out_lines
-    lines = []
-    lines << to_cmd + "\n" if @print_command
-    lines.concat `#{to_cmd}`.lines
+	lines = []
+	lines << to_cmd + "\n" if @print_command
+	lines.concat `#{to_cmd}`.lines
   end
 
   def escape(str)
-    str.gsub(/"/, "\\\"")
+	str.gsub(/"/, "\\\"")
   end
 
   def prop_value(filename, key)
-    filename.sub! /^@/, ''
-    IO.popen("mdls '#{filename}'", "r") do |io|
-      while line = io.gets
-        if line =~ /#{key}\s*=\s*(.+)/
-          value_str = $1
-          case value_str
-          when /^"([^"]*)"$/
-            return $1
-          when /^(\d+)$/
-            return $1
-          when /^(.*) \+0000$/
-            ymd = $1.split /\D+/
-            return Time.gm(*ymd) - Time.gm(2001)
-          else
-            next
-          end
-        end
-      end
-      return nil
-    end
+	filename.sub! /^@/, ''
+	IO.popen("mdls '#{filename}'", "r") do |io|
+	  while line = io.gets
+		if line =~ /#{key}\s*=\s*(.+)/
+		  value_str = $1
+		  case value_str
+		  when /^"([^"]*)"$/
+			return $1
+		  when /^(\d+)$/
+			return $1
+		  when /^(.*) \+0000$/
+			ymd = $1.split /\D+/
+			return Time.gm(*ymd) - Time.gm(2001)
+		  else
+			next
+		  end
+		end
+	  end
+	  return nil
+	end
   end
 
   def calculate_time(time_str)
-    now = Time.now
-    datum = Time.gm 2001
-    case time_str
-    when /^(\d+)S$/
-      now - datum - $1.to_i
-    when /^(\d+)M$/
-      now - datum - $1.to_i * 60
-    when /^(\d+)H$/
-      now - datum - $1.to_i * 3600
-    when /^(\d+)d$/
-      now - datum - $1.to_i * 86400
-    when /^(\d+)m$/
-      now - datum - $1.to_i * 2592000
-    when /^(\d+)Y$/
-      now - datum - $1.to_i * 946080000
-    else
-      ymd = time_str.split /\D+/
-      Time.local(*ymd) - datum
-    end
+	now = Time.now
+	datum = Time.gm 2001
+	case time_str
+	when /^(\d+)S$/
+	  now - datum - $1.to_i
+	when /^(\d+)M$/
+	  now - datum - $1.to_i * 60
+	when /^(\d+)H$/
+	  now - datum - $1.to_i * 3600
+	when /^(\d+)d$/
+	  now - datum - $1.to_i * 86400
+	when /^(\d+)m$/
+	  now - datum - $1.to_i * 2592000
+	when /^(\d+)Y$/
+	  now - datum - $1.to_i * 946080000
+	else
+	  ymd = time_str.split /\D+/
+	  Time.local(*ymd) - datum
+	end
   end
 
   def calculate_size(size_str)
-    case size_str
-    when /(\d+)t$/i
-      $1.to_i * 1024 ** 4
-    when /(\d+)g$/i
-      $1.to_i * 1024 ** 3
-    when /(\d+)m$/i
-      $1.to_i * 1024 ** 2
-    when /(\d+)k$/i
-      $1.to_i * 1024
-    else
-      $1.to_i
-    end
+	case size_str
+	when /(\d+)t$/i
+	  $1.to_i * 1024 ** 4
+	when /(\d+)g$/i
+	  $1.to_i * 1024 ** 3
+	when /(\d+)m$/i
+	  $1.to_i * 1024 ** 2
+	when /(\d+)k$/i
+	  $1.to_i * 1024
+	else
+	  $1.to_i
+	end
   end
 
 
   def on_from_option
-    @parser.on('-f from', '--from from', "e.g. --from 2010/1/1
-      #{" " * 35}search \"file was last modified\"equal to or later file at the specified time, the time format is \"YYYY-mm-dd HH:MM:SS\"
-      #{" " * 35}which can use any non-numeric character as a delimiter, you can specify only the date portion.
-      #{" " * 35}In addition,-f option also supports specifying a number followed by a letter in the form specified time,
-      #{" " * 35}supporting characters include: S, M, H, d, m, Y, respectively: seconds, minutes, hours,
-      #{" " * 35}days, months, years, which is equal to 30 days a month, a year equals 365 days.
-      #{" " * 35}For example, search last 10 days file: -f 10d
-      ") do |from|
-      @predicates << "kMDItemFSContentChangeDate >= %i" % (from.start_with?("@") ?
-        prop_value(from, "kMDItemFSContentChangeDate") : calculate_time(from))
-    end
+	@parser.on('-f from', '--from from', "e.g. --from 2010/1/1
+	  #{" " * 35}search \"file was last modified\"equal to or later file at the specified time, the time format is \"YYYY-mm-dd HH:MM:SS\"
+	  #{" " * 35}which can use any non-numeric character as a delimiter, you can specify only the date portion.
+	  #{" " * 35}In addition,-f option also supports specifying a number followed by a letter in the form specified time,
+	  #{" " * 35}supporting characters include: S, M, H, d, m, Y, respectively: seconds, minutes, hours,
+	  #{" " * 35}days, months, years, which is equal to 30 days a month, a year equals 365 days.
+	  #{" " * 35}For example, search last 10 days file: -f 10d
+	  ") do |from|
+	  @predicates << "kMDItemFSContentChangeDate >= %i" % (from.start_with?("@") ?
+		prop_value(from, "kMDItemFSContentChangeDate") : calculate_time(from))
+	end
   end
 
   def on_to_option
-    @parser.on('-t to', '--to to', "search \"file was last modified\" equal to or earlier than the time specified file format with \"-f\" option
-      ") do |to|
-    ymd = to.split(/\D+/)
-      @predicates << "kMDItemFSContentChangeDate <= %i" % (to.start_with?("@") ?
-        prop_value(to, "kMDItemFSContentChangeDate") : calculate_time(to))
-    end
+	@parser.on('-t to', '--to to', "search \"file was last modified\" equal to or earlier than the time specified file format with \"-f\" option
+	  ") do |to|
+	ymd = to.split(/\D+/)
+	  @predicates << "kMDItemFSContentChangeDate <= %i" % (to.start_with?("@") ?
+		prop_value(to, "kMDItemFSContentChangeDate") : calculate_time(to))
+	end
   end
 
   def on_from_create_option
-    @parser.on('-F from', '--from-create from', "search \"file creation time\" equal to or later file at the specified time, the same format \"-f\" option
-      ") do |from|
-      @predicates << "kMDItemFSCreationDate >= %i" % (from.start_with?("@") ?
-        prop_value(from, "kMDItemFSCreationDate") : calculate_time(from))
-    end
+	@parser.on('-F from', '--from-create from', "search \"file creation time\" equal to or later file at the specified time, the same format \"-f\" option
+	  ") do |from|
+	  @predicates << "kMDItemFSCreationDate >= %i" % (from.start_with?("@") ?
+		prop_value(from, "kMDItemFSCreationDate") : calculate_time(from))
+	end
   end
 
   def on_to_create_option
-    @parser.on('-T to', '--to-create to', "search \"file creation time\" equal to or earlier than the time specified in the file format with \"-f\" option
-      ") do |to|
-    ymd = to.split(/\D+/)
-      @predicates << "kMDItemFSCreationDate <= %i" % (to.start_with?("@") ?
-        prop_value(to, "kMDItemFSCreationDate") : calculate_time(to))
-    end
+	@parser.on('-T to', '--to-create to', "search \"file creation time\" equal to or earlier than the time specified in the file format with \"-f\" option
+	  ") do |to|
+	ymd = to.split(/\D+/)
+	  @predicates << "kMDItemFSCreationDate <= %i" % (to.start_with?("@") ?
+		prop_value(to, "kMDItemFSCreationDate") : calculate_time(to))
+	end
   end
 
   def on_query_option
-    @parser.on('-q query', '--query query', 'e.g. --query "keyword"
-      ') do |query|
-      @predicates << "kMDItemTextContent == \"%s\"cdw" % escape(query)
-    end
+	@parser.on('-q query', '--query query', 'e.g. --query "keyword"
+	  ') do |query|
+	  @predicates << "kMDItemTextContent == \"%s\"cdw" % escape(query)
+	end
   end
 
   def on_content_type_option
-    @parser.on('-c contenttype', '--content-type contenttype', "e.g. --contenttype com.omnigroup.omnigraffle.graffle
-      #{" " * 35}search \"kMDItemContentType \"attribute value is equal to the specified file, you can not
-      #{" " * 35}specify the complete Content Type, such as Content Type Ruby script
-      #{" " * 35}as \"public.ruby-script \", but you can use the following command to all all
-      #{" " * 35}Ruby script file: mdfind4-c ruby
-      ") do |contenttype|
-      @predicates << "kMDItemContentType == \"%s\"cdw" % (contenttype.start_with?("@") ?
-        prop_value(contenttype, "kMDItemContentType") : escape(contenttype))
-    end
+	@parser.on('-c contenttype', '--content-type contenttype', "e.g. --contenttype com.omnigroup.omnigraffle.graffle
+	  #{" " * 35}search \"kMDItemContentType \"attribute value is equal to the specified file, you can not
+	  #{" " * 35}specify the complete Content Type, such as Content Type Ruby script
+	  #{" " * 35}as \"public.ruby-script \", but you can use the following command to all all
+	  #{" " * 35}Ruby script file: mfe ruby
+	  ") do |contenttype|
+	  @predicates << "kMDItemContentType == \"%s\"cdw" % (contenttype.start_with?("@") ?
+		prop_value(contenttype, "kMDItemContentType") : escape(contenttype))
+	end
   end
 
   def on_file_extension_name_option
-    @parser.on('-e file-ext-name', '--type file-ext-name', ".e.g  -e 'mp3'
-      #{" " * 35}ContentType string inconvenient memories, in order to facilitate the use of this program will be used
-      #{" " * 35}file type extension and associated ContentType string, you can use this option
-      #{" " * 35}suffix to specify the files you want to search, you can use \"1\"option to see all the support
-      #{" " * 35}prefix name and the associated
-      ") do | type |
-      @predicates << "kMDItemContentType == \"%s\"cdw" % escape(CONTENT_TYPE_MAP[type])
-    end
+	@parser.on('-e file-ext-name', '--type file-ext-name', ".e.g  -e 'mp3'
+	  #{" " * 35}ContentType string inconvenient memories, in order to facilitate the use of this program will be used
+	  #{" " * 35}file type extension and associated ContentType string, you can use this option
+	  #{" " * 35}suffix to specify the files you want to search, you can use \"1\"option to see all the support
+	  #{" " * 35}prefix name and the associated
+	  ") do | type |
+	  @predicates << "kMDItemContentType == \"%s\"cdw" % escape(CONTENT_TYPE_MAP[type])
+	end
   end
 
   def on_list_types_option
-    @parser.on('-l', '--list-types', "ContentType string inconvenient memories, in order to facilitate the use of this program will be used
-      #{" " * 35}file type extension and associated ContentType string, use this option
-      #{" " * 35}See all the support and the associated extension
-      ") do
-      puts
-      CONTENT_TYPE_MAP.keys.sort.each do |e|
-        printf "\t%-10s : %s\n", e, CONTENT_TYPE_MAP[e]
-      end
-      puts
-      exit
-    end
+	@parser.on('-l', '--list-types', "ContentType strings aren't easy to remember. In order to facilitate the use of this program will be used
+	  #{" " * 35}file type extension and associated ContentType string, use this option
+	  #{" " * 35}See all the support and the associated extension
+	  ") do
+	  puts
+	  CONTENT_TYPE_MAP.keys.sort.each do |e|
+		printf "\t%-10s : %s\n", e, CONTENT_TYPE_MAP[e]
+	  end
+	  puts
+	  exit
+	end
   end
 
   def on_kind_option
-    @parser.on('-k kind', '--kind kind', "e.g. --kind \"HTML Document\"
-      #{" " * 35}\"-k\"option is another option is used to specify the file type, which uses
-      #{" " * 35}\"kMDItemKind\"attribute to search for a file, for example, search for messages: \"-k mail message\"
-      #{" " * 35}Search Safari History: \"-k 'Safari History items'\"
-      ") do |kind|
-      kind.sub! /^safari.*/i, 'Safari History items'
-      kind.sub! /^e?mail.*/i, 'e-mail messages'
-      kind.sub! /^-mail.*/i, 'e-mail messages'
-      @predicates << "kMDItemKind == \"*%s*\"cdw" % (kind.start_with?("@") ?
-        prop_value(kind, "kMDItemKind") : escape(kind))
-    end
+	@parser.on('-k kind', '--kind kind', "e.g. --kind \"HTML Document\"
+	  #{" " * 35}\"-k\"option is another option is used to specify the file type, which uses
+	  #{" " * 35}\"kMDItemKind\"attribute to search for a file, for example, search for messages: \"-k mail message\"
+	  #{" " * 35}Search Safari History: \"-k 'Safari History items'\"
+	  ") do |kind|
+	  kind.sub! /^safari.*/i, 'Safari History items'
+	  kind.sub! /^e?mail.*/i, 'e-mail messages'
+	  kind.sub! /^-mail.*/i, 'e-mail messages'
+	  @predicates << "kMDItemKind == \"*%s*\"cdw" % (kind.start_with?("@") ?
+		prop_value(kind, "kMDItemKind") : escape(kind))
+	end
   end
 
   def on_bigger_than_option
-    @parser.on('-b size', '--bigger-than size', "e.g. --bigger-than 100000
-      #{" " * 35}search file size is greater than or equal to the value of a given file, you can use t, g, m, k and other units,
-      #{" " * 35}For example, the search is greater than or equal to 1MB byte file: \"-b 1m\"
-      ") do |size|
-      @predicates << "kMDItemFSSize >= %s" % (size.start_with?("@") ?
-        prop_value(size, "kMDItemFSSize"): calculate_size(size).to_s)
-      usesize = true
-    end
+	@parser.on('-b size', '--bigger-than size', "e.g. --bigger-than 100000
+	  #{" " * 35}search file size is greater than or equal to the value of a given file, you can use t, g, m, k and other units,
+	  #{" " * 35}For example, the search is greater than or equal to 1MB byte file: \"-b 1m\"
+	  ") do |size|
+	  @predicates << "kMDItemFSSize >= %s" % (size.start_with?("@") ?
+		prop_value(size, "kMDItemFSSize"): calculate_size(size).to_s)
+	  usesize = true
+	end
   end
 
   def on_smaller_than
-    @parser.on('-s sizes', '--smaller-than size', "e.g. --smaller-than 100000
-      #{" " * 35}search for files to the file size is less than or equal to a given value, you can use t, g, m, k and other units,
-      #{" " * 35}For example, the search is less than or equal to 1GB byte file: \"-b 1G\"
-      ") do |size|
-      @predicates << "kMDItemFSSize <= %s" % (size.start_with?("@") ?
-        prop_value(size, "kMDItemFSSize"): calculate_size(size).to_s)
-      usesize = true
-    end
+	@parser.on('-s sizes', '--smaller-than size', "e.g. --smaller-than 100000
+	  #{" " * 35}search for files to the file size is less than or equal to a given value, you can use t, g, m, k and other units,
+	  #{" " * 35}For example, the search is less than or equal to 1GB byte file: \"-b 1G\"
+	  ") do |size|
+	  @predicates << "kMDItemFSSize <= %s" % (size.start_with?("@") ?
+		prop_value(size, "kMDItemFSSize"): calculate_size(size).to_s)
+	  usesize = true
+	end
   end
 
   def on_prop_eq_option
-    @parser.on('', '--prop-eq arg_value', "e.g. --prop-eq FSSize@diary.txt
-      #{" " * 35}different types of files each have a variety of attributes, the attributes of the program supports more limited, if necessary
-      #{" " * 35}according to other attributes comparison, use of this option and the following three to \"--prop\"
-      #{" " * 35}Heading options. OS X comes through \"mdls\"command to view a variety of file attributes,
-      #{" " * 35}attribute names generally \"kMDItem\"when beginning to use these four options can only specify \"kMDItem\"
-      #{" " * 35}back part, the format for the value of the option \"property@filename\", for example,
-      #{" " * 35}to search all files a.txt file size is equal to the: --prop-eq FSSize@./a.txt
-      ") do |arg_value|
-      prop_key, filename = arg_value.split /@/
-      prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
-      filename = File.expand_path filename
-      @predicates << "#{prop_key} == %s" % prop_value(filename, prop_key)
-    end
+	@parser.on('', '--prop-eq arg_value', "e.g. --prop-eq FSSize@diary.txt
+	  #{" " * 35}different types of files each have a variety of attributes, the attributes of the program supports more limited, if necessary
+	  #{" " * 35}according to other attributes comparison, use of this option and the following three to \"--prop\"
+	  #{" " * 35}Heading options. OS X comes through \"mdls\"command to view a variety of file attributes,
+	  #{" " * 35}attribute names generally \"kMDItem\"when beginning to use these four options can only specify \"kMDItem\"
+	  #{" " * 35}back part, the format for the value of the option \"property@filename\", for example,
+	  #{" " * 35}to search all files a.txt file size is equal to the: --prop-eq FSSize@./a.txt
+	  ") do |arg_value|
+	  prop_key, filename = arg_value.split /@/
+	  prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
+	  filename = File.expand_path filename
+	  @predicates << "#{prop_key} == %s" % prop_value(filename, prop_key)
+	end
   end
 
   def on_prop_ne_option
-    @parser.on('', '--prop-ne arg_value', 'e.g. --prop-ne FSSize@diary.txt
-      ') do |arg_value|
-      prop_key, filename = arg_value.split /@/
-      prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
-      filename = File.expand_path filename
-      @predicates << "#{prop_key} != %s" % prop_value(filename, prop_key)
-    end
+	@parser.on('', '--prop-ne arg_value', 'e.g. --prop-ne FSSize@diary.txt
+	  ') do |arg_value|
+	  prop_key, filename = arg_value.split /@/
+	  prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
+	  filename = File.expand_path filename
+	  @predicates << "#{prop_key} != %s" % prop_value(filename, prop_key)
+	end
   end
 
   def on_prop_le_option
-    @parser.on('', '--prop-le arg_value', 'e.g. --prop-le FSSize@diary.txt
-      ') do |arg_value|
-      prop_key, filename = arg_value.split /@/
-      prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
-      filename = File.expand_path filename
-      @predicates << "#{prop_key} <= %s" % prop_value(filename, prop_key)
-    end
+	@parser.on('', '--prop-le arg_value', 'e.g. --prop-le FSSize@diary.txt
+	  ') do |arg_value|
+	  prop_key, filename = arg_value.split /@/
+	  prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
+	  filename = File.expand_path filename
+	  @predicates << "#{prop_key} <= %s" % prop_value(filename, prop_key)
+	end
   end
 
   def on_prop_ge_option
-    @parser.on('', '--prop-ge arg_value', 'e.g. --prop-ge FSSize@diary.txt
-      ') do |arg_value|
-      prop_key, filename = arg_value.split /@/
-      prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
-      filename = File.expand_path filename
-      @predicates << "#{prop_key} >= %s" % prop_value(filename, prop_key)
-    end
+	@parser.on('', '--prop-ge arg_value', 'e.g. --prop-ge FSSize@diary.txt
+	  ') do |arg_value|
+	  prop_key, filename = arg_value.split /@/
+	  prop_key = "kMDItem" + prop_key unless prop_key.start_with?("kMDItem")
+	  filename = File.expand_path filename
+	  @predicates << "#{prop_key} >= %s" % prop_value(filename, prop_key)
+	end
   end
 
   def on_download_url_option
-    @parser.on('-d url', '--downloadfrom url', "Searching for files downloaded from the URL") do |url|
-      @predicates << "kMDItemWhereFroms == \"%s\"cdw" % "*#{escape(url)}*" # 曖昧指定
-    end
+	@parser.on('-d url', '--downloadfrom url', "Searching for files downloaded from the URL") do |url|
+	  @predicates << "kMDItemWhereFroms == \"%s\"cdw" % "*#{escape(url)}*" # 曖昧指定
+	end
   end
 
   def on_name_option
-    @parser.on('-n name', '--name name', "search by file name, automatic support fuzzy matching, without specifying the wildcard") do |name|
-      @predicates << "kMDItemFSName == \"%s\"cdw" % escape(name)
-    end
+	@parser.on('-n name', '--name name', "search by file name, automatic support fuzzy matching, without specifying the wildcard") do |name|
+	  @predicates << "kMDItemFSName == \"%s\"cdw" % escape(name)
+	end
   end
 
   def on_null_option
-    @parser.on('-0', '--null', "Prints an ASCII NUL character after each result path.
-      #{" " * 35}This is useful when used in conjunction with
-      #{" " * 35}xargs -0.") do
-      @ascii_null = true
-    end
+	@parser.on('-0', '--null', "Prints an ASCII NUL character after each result path.
+	  #{" " * 35}This is useful when used in conjunction with
+	  #{" " * 35}xargs -0.") do
+	  @ascii_null = true
+	end
   end
 
   def on_live_option
-    @parser.on('', '--live', "Causes the mdfind command to provide live-updates to the
-      #{" " * 35}number of files matching the query. When an
-      #{" " * 35}update causes the query results to change the
-      #{" " * 35} number of matches is updated.  The find can
-      #{" " * 35}be cancelled by typing ctrl-C.
-      ") do
-      @live = true
-    end
+	@parser.on('', '--live', "Causes the mdfind command to provide live-updates to the
+	  #{" " * 35}number of files matching the query. When an
+	  #{" " * 35}update causes the query results to change the
+	  #{" " * 35} number of matches is updated.  The find can
+	  #{" " * 35}be cancelled by typing ctrl-C.
+	  ") do
+	  @live = true
+	end
   end
 
   def on_count_option
-    @parser.on('', '--count', "Causes the mdfind command to output the total number of
-      #{" " * 35}matches, instead of the path to the matching
-      #{" " * 35}items.
-      ") do
-      @count = true
-    end
+	@parser.on('', '--count', "Causes the mdfind command to output the total number of
+	  #{" " * 35}matches, instead of the path to the matching
+	  #{" " * 35}items.
+	  ") do
+	  @count = true
+	end
   end
 
   def on_onlyin_option
-    @parser.on('-o dir', '--onlyin dir', "mdfind4 default search the file system for all documents to be indexed by the option
-      #{" " * 35}to constrain its only search in a directory.
-      ") do |dir|
-      if not dir =~ /^\//
-        dir = File.expand_path dir
-      end
-      @scope = escape dir
-    end
+	@parser.on('-o dir', '--onlyin dir', "mfeefault search the file system for all documents to be indexed by the option
+	  #{" " * 35}to constrain its only search in a directory.
+	  ") do |dir|
+	  if not dir =~ /^\//
+		dir = File.expand_path dir
+	  end
+	  @scope = escape dir
+	end
   end
 
   def on_debug_option
-    @parser.on('', '--debug', "mdfind4 by calling the OS X system comes mdfind commands to complete the file search, specify
-      #{" " * 35}After this option, you can see the actual call parameters mdfind4 command
-      ") do
-      @print_command = true
-    end
+	@parser.on('', '--debug', "mfey calling the OS X system comes mdfind commands to complete the file search, specify
+	  #{" " * 35}After this option, you can see the actual call parameters mfeommand
+	  ") do
+	  @print_command = true
+	end
   end
 end
 
